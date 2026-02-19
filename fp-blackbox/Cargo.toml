@@ -1,0 +1,25 @@
+[package]
+name = "fp-blackbox"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+criterion = { version = "0.8.2", features = ["html_reports"] }
+ark-std = { version = "0.5.0", features = ["print-trace"] }
+ark-ec = { version = "0.5.0" }
+ark-ff = { version = "0.5.0" }
+ark-poly = { version = "0.5.0" }
+ark-bls12-381 = { version = "0.5.0" }
+ark-bn254 = { version = "0.5.0" }
+ark-serialize = { version = "0.5.0" }
+rand = { version = "0.10.0", default-features = false, features = ["std_rng"] }
+blake3 = { version = "1.8" }
+digest = "0.10"
+
+[features]
+asm = ["ark-ff/asm"]
+
+
+[[bench]]
+name = "vouch"
+harness = false

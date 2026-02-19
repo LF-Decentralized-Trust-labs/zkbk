@@ -9,11 +9,11 @@ use ark_relations::r1cs::*;
 use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
 use ark_snark::SNARK;
 
-use zkbk::utils;
-use zkbk::{vector_commitment, record_commitment, prf};
-use zkbk::vector_commitment::bytes::pedersen::{*, constraints::*};
-use zkbk::record_commitment::kzg::{*, constraints::*};
-use zkbk::prf::{*, constraints::*};
+use fp_snark::utils;
+use fp_snark::{vector_commitment, record_commitment, prf};
+use fp_snark::vector_commitment::bytes::pedersen::{*, constraints::*};
+use fp_snark::record_commitment::kzg::{*, constraints::*};
+use fp_snark::prf::{*, constraints::*};
 
 pub const OWNER: usize = 1;
 pub const RHO: usize = 7;

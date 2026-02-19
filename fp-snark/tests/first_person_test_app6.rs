@@ -9,13 +9,13 @@ use ark_relations::r1cs::*;
 use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
 use ark_snark::SNARK;
 
-use zkbk::{record_commitment, vector_commitment, prf};
-use zkbk::record_commitment::sha256::{*, constraints::*};
-use zkbk::vector_commitment::bytes::sha256::{*, constraints::*};
-use zkbk::prf::{*, constraints::*};
-use zkbk::signature::{schnorr, schnorr::constraints::*, *};
-use zkbk::random_oracle::{RandomOracle, blake2s::RO};
-use zkbk::utils;
+use fp_snark::{record_commitment, vector_commitment, prf};
+use fp_snark::record_commitment::sha256::{*, constraints::*};
+use fp_snark::vector_commitment::bytes::sha256::{*, constraints::*};
+use fp_snark::prf::{*, constraints::*};
+use fp_snark::signature::{schnorr, schnorr::constraints::*, *};
+use fp_snark::random_oracle::{RandomOracle, blake2s::RO};
+use fp_snark::utils;
 
 use ark_ed_on_bls12_377::constraints::EdwardsVar as JubJubVar;
 use ark_ed_on_bls12_377::EdwardsProjective as JubJub;

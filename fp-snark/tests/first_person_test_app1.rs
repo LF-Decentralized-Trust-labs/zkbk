@@ -9,9 +9,9 @@ use ark_relations::r1cs::*;
 use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
 use ark_snark::SNARK;
 
-use zkbk::{record_commitment, prf};
-use zkbk::record_commitment::pedersen::{*, constraints::*};
-use zkbk::prf::{*, constraints::*};
+use fp_snark::{record_commitment, prf};
+use fp_snark::record_commitment::pedersen::{*, constraints::*};
+use fp_snark::prf::{*, constraints::*};
 
 pub type ConstraintF = ark_bw6_761::Fr;
 pub type H = prf::config::ed_on_bw6_761::Hash;
