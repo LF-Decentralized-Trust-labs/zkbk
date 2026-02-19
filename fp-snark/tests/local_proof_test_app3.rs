@@ -9,9 +9,9 @@ use ark_relations::r1cs::*;
 use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
 use ark_snark::SNARK;
 
-use zkbk::vector_commitment::bytes::pedersen::{*, constraints::*};
-use zkbk::record_commitment::kzg::{*, constraints::*};
-use zkbk::{vector_commitment, record_commitment};
+use fp_snark::vector_commitment::bytes::pedersen::{*, constraints::*};
+use fp_snark::record_commitment::kzg::{*, constraints::*};
+use fp_snark::{vector_commitment, record_commitment};
 
 pub type ConstraintF = ark_bw6_761::Fr;
 type MT = config::ed_on_bw6_761::MerkleTreeParams;

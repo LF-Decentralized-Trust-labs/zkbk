@@ -1,0 +1,44 @@
+[package]
+name = "fp-snark"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "fp_snark"
+path = "src/lib.rs"
+
+
+
+[dependencies]
+rand = { version = "0.8.0" }
+rand_chacha = { version = "0.3.0" }
+derivative = { version = "2.0", features = ["use_core"] }
+num-bigint = { version = "0.4", default-features = false }
+tracing = { version = "0.1", default-features = false, features = [ "attributes" ] }
+tracing-subscriber = { version = "0.2" }
+
+ark-ff = { version = "0.5.0", default-features = false }
+ark-poly = { version = "0.5.0", default-features = false }
+ark-relations = { version = "0.5.0", default-features = false }
+ark-std = { version = "0.5.0", default-features = false, features = ["getrandom"] }
+ark-r1cs-std = { version = "0.5.0", default-features = false }
+ark-crypto-primitives = { version = "0.5.0", default-features = false, features = ["r1cs", "crh", "prf"] }
+ark-snark = { version = "0.5.0", default-features = false }
+ark-groth16 = { version = "0.5.0", default-features = false, features = [ "r1cs", "parallel" ] }
+ark-serialize = { version = "0.5.0", default-features = true }
+
+# curves
+ark-ec = { version = "0.5.0", default-features = false }
+ark-bls12-377 = { version = "0.5.0", default-features = false, features = [ "curve", "r1cs" ] }
+ark-bw6-761 = { version = "0.5.0" }
+ark-ed-on-bls12-377 = { version = "0.5.0", default-features = false, features = [ "r1cs" ] }
+ark-ed-on-bw6-761 = { version = "0.5.0", default-features = false, features = [ "r1cs" ] }
+
+bs58 = { version = "*" }
+hex = { version = "*" }
+blake2 = { version = "0.9" }
+digest = { version = "0.9" }
+
+[dev-dependencies]
+ark-relations = { version = "0.5.0", default-features = false }
+ark-algebra-test-templates = { version = "0.5.0", default-features = false }

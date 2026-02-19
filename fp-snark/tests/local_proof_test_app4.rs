@@ -5,8 +5,8 @@ use ark_relations::r1cs::*;
 use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
 use ark_snark::SNARK;
 
-use zkbk::prf::{*, constraints::*};
-use zkbk::prf;
+use fp_snark::prf::{*, constraints::*};
+use fp_snark::prf;
 
 pub type ConstraintF = ark_bw6_761::Fr;
 pub type H = prf::config::ed_on_bw6_761::Hash;

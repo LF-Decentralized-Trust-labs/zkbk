@@ -9,11 +9,11 @@ use ark_groth16::{Groth16, ProvingKey, VerifyingKey};
 use ark_snark::SNARK;
 use ark_ec::CurveGroup;
 
-use zkbk::{record_commitment, prf};
-use zkbk::record_commitment::pedersen::{*, constraints::*};
-use zkbk::prf::{*, constraints::*};
-use zkbk::utils;
-use zkbk::signature::{schnorr, schnorr::constraints::*, *};
+use fp_snark::{record_commitment, prf};
+use fp_snark::record_commitment::pedersen::{*, constraints::*};
+use fp_snark::prf::{*, constraints::*};
+use fp_snark::utils;
+use fp_snark::signature::{schnorr, schnorr::constraints::*, *};
 
 use ark_ed_on_bw6_761::constraints::EdwardsVar as JubJubVar;
 use ark_ed_on_bw6_761::EdwardsProjective as JubJub;
@@ -22,9 +22,6 @@ pub type ConstraintF = ark_bw6_761::Fr;
 pub type H = prf::config::ed_on_bw6_761::Hash;
 pub type HG = prf::config::ed_on_bw6_761::HashGadget;
 pub type S = schnorr::Schnorr<JubJub>;
-pub type SVar = schnorr::constraints::PublicKeyVar<JubJub, JubJubVar>;
-
-type MsgVar = Vec<UInt8<ConstraintF>>;
 
 pub struct IssuerCircuit {
     pub nullifier_prf_instance: JZPRFInstance<H>, // PRF(issuer_sk, user_public_key)
@@ -43,7 +40,7 @@ fn generate_schnorr_verification_constraints<S: SignatureScheme, SG: SigVerifyGa
     certification: &<S as SignatureScheme>::Signature,
     issuer_public_key: &<S as SignatureScheme>::PublicKey,
     message: &[u8],
-) -> (SG::PublicKeyVar, MsgVar) {
+) {
     let parameters_var = SG::ParametersVar::new_constant(cs.clone(), schnorr_parameters).unwrap();
     let signature_var = SG::SignatureVar::new_witness(cs.clone(), || Ok(certification)).unwrap();
     let pk_var = SG::PublicKeyVar::new_witness(cs.clone(), || Ok(issuer_public_key)).unwrap();
@@ -54,8 +51,6 @@ fn generate_schnorr_verification_constraints<S: SignatureScheme, SG: SigVerifyGa
     let valid_sig_var = SG::verify(&parameters_var, &pk_var, &msg_var, &signature_var).unwrap();
 
     valid_sig_var.enforce_equal(&Boolean::<ConstraintF>::TRUE).unwrap();
-
-    (pk_var, msg_var)
 }
 
 impl ConstraintSynthesizer<ConstraintF> for IssuerCircuit {
@@ -104,53 +99,29 @@ impl ConstraintSynthesizer<ConstraintF> for IssuerCircuit {
         //--------------- Schnorr stuff ------------------
 
         let message = utils::serialize(&user_record_com.x);
-        let (issuer_pk_var, issuer_signature_msg_var) = generate_schnorr_verification_constraints::<
+        generate_schnorr_verification_constraints::<
             schnorr::Schnorr<JubJub>,
             SchnorrSignatureVerifyGadget<JubJub, JubJubVar>,
         >(cs.clone(), &self.schnorr_parameters, &self.certification, &self.issuer_public_key, &message);
 
 
-        //--------------- Public Variable ------------------
-
-        // make the issuer public key a public variable
-        let issuer_pk_var: SVar = issuer_pk_var.into();
-        let public_var_issuer_public_key_x = ark_bls12_377::constraints::FqVar::new_input(
-            ark_relations::ns!(cs, "issuer_public_key_x"), 
-            || { Ok(self.issuer_public_key.x) },
-        ).unwrap();
-        issuer_pk_var.pub_key.x.enforce_equal(&public_var_issuer_public_key_x)?;
-
         //--------------- Binding the three ------------------
 
-        // output of ped com is the input msg being signed
-        let user_record_com_affine_x_bytes = user_record_var
-            .commitment
-            .to_affine()
-            .unwrap()
-            .x
-            .to_bytes_le()
-            .unwrap();
-        for i in 0..user_record_com_affine_x_bytes.len() {
-            user_record_com_affine_x_bytes[i].enforce_equal(&issuer_signature_msg_var[i])?;
-        }
-
-        // collect all the bytes from pk encoding
-        let user_pk_encoded = encode_public_key(&self.user_public_key);
+        let user_pk_encoded: Vec<u8> = utils::serialize(&self.user_public_key).iter().take(32).cloned().collect();
         let mut pubkey_byte_vars: Vec::<UInt8<ConstraintF>> = Vec::new();
         for i in 0..user_pk_encoded.len() {
             pubkey_byte_vars.push(UInt8::new_witness(cs.clone(), || Ok(&user_pk_encoded[i])).unwrap())
         }
 
-        // the input to nullifier PRF is the public key
-        for (i, byte_var) in nullifier_prf_instance_var.input_var.iter().enumerate() {
-            byte_var.enforce_equal(&pubkey_byte_vars[i])?;
+        for (i, byte_var) in pubkey_byte_vars.iter().enumerate() {
+            byte_var.enforce_equal(&nullifier_prf_instance_var.input_var[i])?;
         }
 
-        // the pubkey is at index 0 of the user record
+        // the pubkey is at index 0
         for (i, byte_var) in user_record_var.fields[0].iter().enumerate() {
             byte_var.enforce_equal(&pubkey_byte_vars[i])?;
         }
-        // the nullifier is at index 1 of the user record
+        // the nullifier is at index 1
         for (i, byte_var) in user_record_var.fields[1].iter().enumerate() {
             byte_var.enforce_equal(&nullifier_prf_instance_var.output_var[i])?;
         }
@@ -161,10 +132,6 @@ impl ConstraintSynthesizer<ConstraintF> for IssuerCircuit {
 
 fn compute_nullifier(prf_instance: &JZPRFInstance<H>) -> Vec<u8> {
     prf_instance.evaluate().iter().take(32).cloned().collect()
-}
-
-fn encode_public_key(pk: &<S as SignatureScheme>::PublicKey) -> Vec<u8> {
-    utils::serialize(pk).iter().take(32).cloned().collect()
 }
 
 fn setup_witness() -> IssuerCircuit {
@@ -178,13 +145,12 @@ fn setup_witness() -> IssuerCircuit {
     let schnorr_parameters = S::setup::<_>(&mut rng).unwrap();
     let (user_public_key, user_secret_key) = S::keygen(&schnorr_parameters, &mut rng).unwrap();
     let (issuer_public_key, issuer_secret_key) = S::keygen(&schnorr_parameters, &mut rng).unwrap();
-    let user_pk_encoded = encode_public_key(&user_public_key);
-    let user_sk_encoded = utils::serialize(&user_secret_key.secret_key);
+    let user_pk_encoded: Vec<u8> = utils::serialize(&user_public_key).iter().take(32).cloned().collect();
 
     let nullifier_prf_instance = JZPRFInstance::new(
         &prf_params,
         &user_pk_encoded,
-        &user_sk_encoded
+        &utils::serialize(&issuer_secret_key.secret_key)
     );
     let nullifier: Vec<u8> = compute_nullifier(&nullifier_prf_instance);
 
@@ -234,7 +200,7 @@ fn test_issuance() {
 
     let circuit = setup_witness();
 
-    let public_input = [ circuit.issuer_public_key.x ];
+    let public_input = [ ];
 
     let now = std::time::Instant::now();
     let proof = Groth16::<BW6_761>::prove(&pk, circuit, &mut rng).unwrap();
